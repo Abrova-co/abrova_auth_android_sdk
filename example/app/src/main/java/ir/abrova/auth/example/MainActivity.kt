@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private var registration: ListenerRegistration? = null
 
     private lateinit var apiKey: EditText
+    private lateinit var server: EditText
     private lateinit var email: EditText
     private lateinit var password: EditText
     private lateinit var userLabel: TextView
@@ -45,6 +46,9 @@ class MainActivity : AppCompatActivity() {
 
         apiKey = field("Public API key (ab_live_...)", API_KEY_PLACEHOLDER)
         root.addView(apiKey)
+        // Optional: another Auth server, for example one you run yourself. Empty = the default server.
+        server = field("Server URL (optional)", "").apply { inputType = InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_CLASS_TEXT }
+        root.addView(server)
         root.addView(button("Configure") { configure() })
 
         userLabel = TextView(this).apply { setPadding(0, dp(12), 0, dp(4)); textSize = 16f }
@@ -92,7 +96,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
         registration?.remove()
-        auth.configure(applicationContext, key)
+        val url = server.text.toString().trim()
+        if (url.isEmpty()) auth.configure(applicationContext, key) else auth.configure(applicationContext, key, url)
         // Called on sign-in, sign-out and when a session ends; post to the main thread for views.
         registration = auth.addAuthStateListener { userId -> runOnUiThread { renderUser(userId) } }
         show("Configured.")
