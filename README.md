@@ -37,7 +37,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("ir.abrova:abrova-auth:0.1.1")
+    implementation("ir.abrova:abrova-auth:0.2.0")
 }
 ```
 
@@ -45,7 +45,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'ir.abrova:abrova-auth:0.1.1'
+    implementation 'ir.abrova:abrova-auth:0.2.0'
 }
 ```
 
@@ -182,6 +182,21 @@ auth.deleteAccount()
 The refresh token is stored encrypted with a key that never leaves the
 Android Keystore; the access token stays in memory. A session revoked
 elsewhere signs the user out here; a network error does not.
+
+## Custom claims
+
+Your server sets custom claims for a user with the server secret (`setCustomUserClaims`, see
+[Custom claims](https://abrova.ir/docs/auth/custom-claims)), for example `{ "plan": "pro" }`. Every token of the
+user carries them, and Abrova Sync rules read them as `auth.token.plan`. In the app, read them to show things
+(a "Pro" badge): access is still decided on the server.
+
+```kotlin
+val result = auth.getTokenResult()
+if (result?.claims?.get("plan") == "pro") showProBadge()
+
+// Right after your server changed the claims ("Check my purchase"):
+auth.getTokenResult(forceRefresh = true)
+```
 
 ## Errors
 

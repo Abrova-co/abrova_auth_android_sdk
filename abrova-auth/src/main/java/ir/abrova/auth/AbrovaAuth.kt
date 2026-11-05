@@ -136,6 +136,16 @@ class AbrovaAuth internal constructor() {
     suspend fun getAccessToken(forceRefresh: Boolean = false): String? =
         sessionManager().validAccessToken(forceRefresh)
 
+    /**
+     * The access token with its decoded fields, like Firebase's `getIdToken()` result: [AbrovaTokenResult.claims] holds
+     * the custom claims your server set (`setCustomUserClaims`), for example to show a "Pro" badge. Null when signed
+     * out. Pass `forceRefresh = true` right after your server changed the claims, to get them without waiting for the
+     * next refresh (at most an hour). For display only: access is decided on the server.
+     */
+    @JvmOverloads
+    suspend fun getTokenResult(forceRefresh: Boolean = false): AbrovaTokenResult? =
+        getAccessToken(forceRefresh)?.let { AbrovaTokenResult.fromToken(it) }
+
     /** For Abrova Push: `AbrovaPushConfig(..., tokenProvider = AbrovaAuth.shared.tokenProvider)`. */
     val tokenProvider: AbrovaAuthTokenProvider = { getAccessToken() }
 
