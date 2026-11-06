@@ -18,6 +18,9 @@ internal class HttpClient(
 ) {
     private val baseUrl = baseUrl.trimEnd('/')
 
+    /** Sent as `x-abrova-locale` (the language of the e-mails Abrova sends); null = not sent. */
+    @Volatile var locale: String? = null
+
     suspend fun send(
         method: String,
         path: String,
@@ -35,6 +38,7 @@ internal class HttpClient(
             .header("X-Abrova-SDK", SDK_HEADER)
             .header("Accept", "application/json")
             .apply { if (bearer != null) header("Authorization", "Bearer $bearer") }
+            .apply { locale?.let { header("x-abrova-locale", it) } }
             .method(method, requestBody ?: if (method == "POST") EMPTY.toRequestBody(JSON) else null)
             .build()
 

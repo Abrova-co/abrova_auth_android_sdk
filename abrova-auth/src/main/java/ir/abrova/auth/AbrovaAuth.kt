@@ -53,6 +53,8 @@ class AbrovaAuth internal constructor() {
 
         const val DEFAULT_BASE_URL = "https://auth-users.abrova.ir"
 
+        private val LANGUAGE_TAG = Regex("^[A-Za-z]{2,8}([-_][A-Za-z0-9]{1,8})*$")
+
         /** The `token` query parameter of a reset, verification or magic link. */
         @JvmStatic
         fun tokenFromLink(link: String): String? {
@@ -66,6 +68,7 @@ class AbrovaAuth internal constructor() {
     }
 
     @Volatile private var http: HttpClient? = null
+    @Volatile private var language: String? = null
     @Volatile private var session: SessionManager? = null
     @Volatile private var cachedUser: AbrovaUser? = null
     private val listeners = CopyOnWriteArrayList<AuthStateListener>()
@@ -96,10 +99,31 @@ class AbrovaAuth internal constructor() {
     internal fun configure(apiKey: String, baseUrl: String, client: OkHttpClient, storage: SessionStorage, clock: () -> Long = System::currentTimeMillis) {
         val http = HttpClient(baseUrl, apiKey, client)
         val manager = SessionManager(http, storage, clock) { userChanged(it) }
+        http.locale = language
         this.http = http
         this.session = manager
         this.cachedUser = null
         _authState.value = manager.restoredUserId
+    }
+
+    // ---------------------------------------------------------------- Language
+
+    /**
+     * The language of the e-mails Abrova sends this user (confirm e-mail, password reset, magic link), like Firebase's
+     * `languageCode`: a BCP 47 tag such as `fa` or `en-US`. null = the project's template language (Console › Abrova
+     * Auth › Email templates). A language Abrova has no texts for also falls back to the template language.
+     */
+    var languageCode: String?
+        get() = language
+        set(value) {
+            val v = value?.trim().orEmpty()
+            language = if (v.length in 2..35 && LANGUAGE_TAG.matches(v)) v else null
+            http?.locale = language
+        }
+
+    /** Sets [languageCode] to the app's current language, like Firebase's `useAppLanguage()`. */
+    fun useAppLanguage() {
+        languageCode = java.util.Locale.getDefault().toLanguageTag()
     }
 
     // ---------------------------------------------------------------- State

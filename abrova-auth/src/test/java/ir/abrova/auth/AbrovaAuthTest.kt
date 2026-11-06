@@ -384,6 +384,49 @@ class AbrovaAuthTest {
         assertNull(AbrovaAuth.tokenFromLink("myapp://auth"))
     }
 
+    // ------------------------------------------------------------ E-mail language
+
+    @Test
+    fun languageCodeIsSentAsLocaleHeaderOnlyWhenSet() = runBlocking {
+        handler = { _, _, _ -> MockResponse().setResponseCode(202) }
+        make()
+        auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
+        auth.languageCode = "fa"
+        auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
+        auth.languageCode = null
+        auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
+        val sent = calls("/v1/magic-link/send").map { it.getHeader("x-abrova-locale") }
+        assertEquals(listOf(null, "fa", null), sent)
+    }
+
+    @Test
+    fun languageCodeSetBeforeConfigureIsKeptAndBadValuesAreIgnored() = runBlocking {
+        handler = { _, _, _ -> MockResponse().setResponseCode(202) }
+        storage = MemorySessionStorage(null)
+        auth = AbrovaAuth()
+        auth.languageCode = "fa-IR"
+        auth.configure("ab_live_test", server.url("/").toString(), OkHttpClient(), storage)
+        auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
+        assertEquals("fa-IR", calls("/v1/magic-link/send").single().getHeader("x-abrova-locale"))
+        for (bad in listOf("", "x", "fa\r\nX: y", "x".repeat(40), "12")) {
+            auth.languageCode = bad
+            assertEquals(bad, null, auth.languageCode)
+        }
+    }
+
+    @Test
+    fun useAppLanguageTakesTheDefaultLocale() {
+        val before = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("fa-IR"))
+            make()
+            auth.useAppLanguage()
+            assertEquals("fa-IR", auth.languageCode)
+        } finally {
+            java.util.Locale.setDefault(before)
+        }
+    }
+
     // ------------------------------------------------------------ SDK header
 
     @Test
@@ -394,7 +437,7 @@ class AbrovaAuthTest {
         auth.signOut()
 
         assertTrue(requests.size >= 2)
-        requests.forEach { (path, req) -> assertEquals(path, "auth-android/0.2.0", req.getHeader("X-Abrova-SDK")) }
+        requests.forEach { (path, req) -> assertEquals(path, "auth-android/0.3.0", req.getHeader("X-Abrova-SDK")) }
     }
 
     @Test

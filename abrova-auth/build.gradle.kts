@@ -53,7 +53,7 @@ mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
     signAllPublications()
 
-    coordinates("ir.abrova", "abrova-auth", project.findProperty("VERSION_NAME") as String? ?: "0.2.0")
+    coordinates("ir.abrova", "abrova-auth", project.findProperty("VERSION_NAME") as String? ?: "0.3.0")
 
     pom {
         name.set("AbrovaAuth Android SDK")

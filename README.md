@@ -37,7 +37,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("ir.abrova:abrova-auth:0.2.0")
+    implementation("ir.abrova:abrova-auth:0.3.0")
 }
 ```
 
@@ -45,7 +45,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'ir.abrova:abrova-auth:0.2.0'
+    implementation 'ir.abrova:abrova-auth:0.3.0'
 }
 ```
 
@@ -197,6 +197,18 @@ if (result?.claims?.get("plan") == "pro") showProBadge()
 // Right after your server changed the claims ("Check my purchase"):
 auth.getTokenResult(forceRefresh = true)
 ```
+
+## E-mail language
+
+Confirm e-mail, password reset and magic-link e-mails go out in the language you set, like Firebase's `languageCode`.
+Unset, the project's template language from the Console applies. Edit the texts in **Console › Abrova Auth › Email
+templates**.
+
+```kotlin
+AbrovaAuth.shared.languageCode = "fa" // or AbrovaAuth.shared.useAppLanguage()
+```
+
+See [Email templates](https://abrova.ir/docs/auth/email-templates).
 
 ## Errors
 
