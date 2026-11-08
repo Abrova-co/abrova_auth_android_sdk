@@ -16,7 +16,7 @@ internal class HttpClient(
     private val apiKey: String,
     private val client: OkHttpClient,
 ) {
-    private val baseUrl = baseUrl.trimEnd('/')
+    val baseUrl = baseUrl.trimEnd('/')
 
     /** Sent as `x-abrova-locale` (the language of the e-mails Abrova sends); null = not sent. */
     @Volatile var locale: String? = null

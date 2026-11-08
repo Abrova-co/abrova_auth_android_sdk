@@ -37,7 +37,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("ir.abrova:abrova-auth:0.3.0")
+    implementation("ir.abrova:abrova-auth:0.4.0")
 }
 ```
 
@@ -45,7 +45,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'ir.abrova:abrova-auth:0.3.0'
+    implementation 'ir.abrova:abrova-auth:0.4.0'
 }
 ```
 
@@ -69,6 +69,51 @@ lifecycleScope.launch {
     Log.d("Auth", "user: ${AbrovaAuth.shared.currentUserId}")
 }
 ```
+
+## Ready-made sign-in screen
+
+Like FirebaseUI: Abrova's sign-in screen, with no forms to build. It shows only the methods turned on in the Console
+and answers the signed-in user, or null when the user closed it.
+
+```kotlin
+import ir.abrova.auth.ui.AbrovaSignIn
+import ir.abrova.auth.ui.AbrovaSignInOptions
+
+AbrovaSignIn.show(this, options = AbrovaSignInOptions(appName = "My Shop")) { result ->
+    if (result != null) Log.d("Auth", "signed in: ${result.userId}")
+}
+
+// Or in a coroutine:
+val result = AbrovaSignIn.await(this)
+```
+
+It opens as a dialog on wide screens and full screen on phones. To put the form in a layout of your own, use
+`AbrovaSignInView(context, onSignedIn = { result -> ... })`. From Java:
+`AbrovaSignIn.show(activity, result -> { ... })`.
+
+| Option | What it does |
+|---|---|
+| `appName`, `logo` | The title ("Sign in to My Shop") and a `Drawable` above it |
+| `languageCode` | `en` or `fa` (right to left). Default: the app's language. The e-mails follow it unless you set `languageCode` on the client yourself |
+| `allowGuest` | Shows "Continue as guest" when anonymous sign-in is on. Off by default: every guest is a new user and counts toward your plan |
+| `google`, `apple` | A `suspend` function that gets an ID token for the hashed nonce it is given (for example with Credential Manager or Sign in with Apple). The button shows only when you pass it |
+| `magicLinkRedirectUrl` | A link that opens your app; shows the magic link button. Finish it with `signInWithMagicLink(token)` |
+| `verifyRedirectUrl`, `resetRedirectUrl` | Your own pages for the confirm and reset links. Default: Abrova's pages |
+| `openUrl` | Opens the Telegram bot link (for example with `Intent.ACTION_VIEW`); without it the link is shown to copy |
+
+```kotlin
+AbrovaSignInOptions(
+    google = { hashedNonce ->
+        // Your Google sign-in, with GetGoogleIdOption.Builder().setNonce(hashedNonce); null when cancelled.
+        getGoogleIdToken(hashedNonce)
+    },
+)
+```
+
+The screen is built from Android's own views (no new dependencies) and takes its colours from your theme
+(`colorAccent`, `colorBackground`, `textColorPrimary`), in light and dark mode. Persian is laid out right to left; that
+needs `android:supportsRtl="true"` in your manifest (the default for new projects). While a sign-in runs the screen
+cannot be closed.
 
 ## Sign in
 
@@ -219,8 +264,8 @@ Every error is a `AbrovaAuthException`. Branch on `code` (see
 
 ## Example app
 
-[`example/`](example) is a small app with anonymous sign-in, e-mail sign-up
-and sign-in, sign-out and account deletion. It builds the SDK from this
+[`example/`](example) is a small app with the ready-made sign-in screen,
+anonymous sign-in, e-mail sign-up and sign-in, sign-out and account deletion. It builds the SDK from this
 repository:
 
 ```bash

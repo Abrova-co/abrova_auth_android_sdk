@@ -437,7 +437,7 @@ class AbrovaAuthTest {
         auth.signOut()
 
         assertTrue(requests.size >= 2)
-        requests.forEach { (path, req) -> assertEquals(path, "auth-android/0.3.0", req.getHeader("X-Abrova-SDK")) }
+        requests.forEach { (path, req) -> assertEquals(path, "auth-android/0.4.0", req.getHeader("X-Abrova-SDK")) }
     }
 
     @Test

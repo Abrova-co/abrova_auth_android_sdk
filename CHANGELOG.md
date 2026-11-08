@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0
+
+- Ready-made sign-in screens, like FirebaseUI: `AbrovaSignIn.show(activity) { result -> ... }` or, in a coroutine,
+  `val result = AbrovaSignIn.await(activity)`. It opens as a dialog on wide screens and full screen on phones, and
+  answers the signed-in user (null when closed). `AbrovaSignInView` puts the same form in any layout.
+  - Shows only the methods turned on in the Console: e-mail and password (sign in, create account, forgot password),
+    magic link, Telegram, Google, Apple and guest.
+  - English and Persian (right to left), from the app's language or `languageCode`. The e-mails Abrova sends follow
+    the screen's language, unless you set `languageCode` yourself.
+  - Follows your app's theme colours, in light and dark mode; `appName` and `logo` for the title.
+  - Google and Apple: pass a function that gets an ID token for the given hashed nonce (for example with Credential
+    Manager). Magic link: pass `magicLinkRedirectUrl` (a link that opens your app).
+  - "Continue as guest" shows only with `allowGuest = true`: every guest is a new user and counts toward your plan.
+  - Built from Android's own views: no new dependencies.
+- `sendPasswordReset`: `redirectUrl` is optional; without it the link opens Abrova's own reset page.
+- `baseUrl`: the Abrova Auth server the client talks to.
+
 ## 0.3.0
 
 - `languageCode` and `useAppLanguage()`, like Firebase: the language of the e-mails Abrova sends this user (confirm

@@ -106,6 +106,9 @@ class AbrovaAuth internal constructor() {
         _authState.value = manager.restoredUserId
     }
 
+    /** The Abrova Auth server this client talks to, without a trailing slash. */
+    val baseUrl: String get() = http?.baseUrl ?: DEFAULT_BASE_URL
+
     // ---------------------------------------------------------------- Language
 
     /**
@@ -250,8 +253,14 @@ class AbrovaAuth internal constructor() {
     suspend fun linkPassword(email: String, password: String): AuthResult =
         link("v1/link/password", mapOf("email" to email, "password" to password))
 
-    /** Sends a password-reset link. Succeeds whether or not the address has an account. */
-    suspend fun sendPasswordReset(email: String, redirectUrl: String) {
+    /**
+     * Sends a password-reset link. Succeeds whether or not the address has an account.
+     *
+     * @param redirectUrl Your own reset page (one of the project's allowed redirect URLs). Null: Abrova's own reset
+     *   page.
+     */
+    @JvmOverloads
+    suspend fun sendPasswordReset(email: String, redirectUrl: String? = null) {
         client().send("POST", "v1/password/forgot", mapOf("email" to email, "redirectUrl" to redirectUrl))
     }
 

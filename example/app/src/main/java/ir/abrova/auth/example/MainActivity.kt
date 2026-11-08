@@ -13,9 +13,11 @@ import androidx.lifecycle.lifecycleScope
 import ir.abrova.auth.ListenerRegistration
 import ir.abrova.auth.AbrovaAuth
 import ir.abrova.auth.AbrovaAuthException
+import ir.abrova.auth.ui.AbrovaSignIn
+import ir.abrova.auth.ui.AbrovaSignInOptions
 import kotlinx.coroutines.launch
 
-// Abrova Auth — Android example (SDK 0.1.1)
+// Abrova Auth — Android example (SDK 0.4.0)
 //
 // Paste your public project key (Abrova Console → your project → API keys) into the field below,
 // or replace the placeholder. Never put a server secret in an app.
@@ -27,6 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private val auth = AbrovaAuth.shared
     private var registration: ListenerRegistration? = null
+    private var configured = false
 
     private lateinit var apiKey: EditText
     private lateinit var server: EditText
@@ -55,6 +58,9 @@ class MainActivity : AppCompatActivity() {
         root.addView(userLabel)
         status = TextView(this).apply { setPadding(0, 0, 0, dp(12)) }
         root.addView(status)
+
+        // The ready-made sign-in screen: only the methods turned on in the Console.
+        root.addView(button("Open the ready-made sign-in screen") { openSignInScreen() })
 
         root.addView(button("Sign in anonymously") { run { auth.signInAnonymously(); "Signed in anonymously." } })
 
@@ -93,6 +99,7 @@ class MainActivity : AppCompatActivity() {
         if (key.isEmpty() || key == API_KEY_PLACEHOLDER) {
             show("Paste your public API key, then tap Configure.")
             renderUser(null)
+            configured = false
             return
         }
         registration?.remove()
@@ -100,7 +107,16 @@ class MainActivity : AppCompatActivity() {
         if (url.isEmpty()) auth.configure(applicationContext, key) else auth.configure(applicationContext, key, url)
         // Called on sign-in, sign-out and when a session ends; post to the main thread for views.
         registration = auth.addAuthStateListener { userId -> runOnUiThread { renderUser(userId) } }
+        configured = true
         show("Configured.")
+    }
+
+    private fun openSignInScreen() {
+        if (!configured) return show("Paste your public API key, then tap Configure.")
+        val options = AbrovaSignInOptions(appName = "Abrova Auth example", allowGuest = true)
+        AbrovaSignIn.show(this, auth, options) { result ->
+            show(if (result == null) "Sign-in screen closed." else "Signed in from the sign-in screen: ${result.userId}")
+        }
     }
 
     /** Runs one SDK call and shows its result or its error code. */
