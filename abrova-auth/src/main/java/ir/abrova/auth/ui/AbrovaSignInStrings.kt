@@ -2,25 +2,26 @@ package ir.abrova.auth.ui
 
 import ir.abrova.auth.AbrovaAuthException
 
-/** The sign-in screen's texts in English and Persian. */
+/** The sign-in screen's texts: English, and each language in [LANGUAGES]. */
 class AbrovaSignInStrings private constructor(
-    /** `en` or `fa`. */
+    /** The language whose texts are shown: one the screen has (see [LANGUAGES]), English for any other. */
     val languageCode: String,
     private val table: Map<String, String>,
+    /** Whether the language reads right to left. */
+    val rtl: Boolean,
 ) {
-    /** Persian is written right to left. */
-    val rtl: Boolean get() = languageCode == "fa"
-
     operator fun get(key: String): String = table[key] ?: EN[key] ?: key
 
     /** The user-facing message for an error code; never the server's English hint. */
     fun error(code: String): String = table["error.$code"] ?: EN["error.$code"] ?: get("error.other")
 
     companion object {
-        /** Persian for `fa*`, English for everything else. */
+        /** The texts of [languageCode] when the screen has them, English for everything else. */
         @JvmStatic
-        fun of(languageCode: String?): AbrovaSignInStrings =
-            if ((languageCode ?: "").lowercase().startsWith("fa")) AbrovaSignInStrings("fa", FA) else AbrovaSignInStrings("en", EN)
+        fun of(languageCode: String?): AbrovaSignInStrings {
+            val code = (languageCode ?: "").trim().lowercase().split('-', '_').first()
+            return LANGUAGES[code] ?: LANGUAGES.getValue("en")
+        }
 
         /** The error code of [e]; `unknown` (shown as `error.other`) for anything that is not an Abrova Auth error. */
         @JvmStatic
@@ -138,6 +139,12 @@ class AbrovaSignInStrings private constructor(
         "error.INVALID_ID_TOKEN" to "ورود تأیید نشد. دوباره امتحان کنید.",
         "error.VERIFY_NOT_SENT" to "حساب ساخته شد، اما ایمیل تأیید فرستاده نشد. بعداً با «رمز را فراموش کرده‌اید؟» دوباره امتحان کنید.",
         "error.other" to "مشکلی پیش آمد. دوباره امتحان کنید.",
+        )
+
+        /** The languages of the screen, by the part of a language code before "-" or "_" ("en-US" → "en"). */
+        private val LANGUAGES: Map<String, AbrovaSignInStrings> = mapOf(
+            "en" to AbrovaSignInStrings("en", EN, rtl = false),
+            "fa" to AbrovaSignInStrings("fa", FA, rtl = true),
         )
     }
 }

@@ -113,7 +113,7 @@ class AbrovaAuth internal constructor() {
 
     /**
      * The language of the e-mails Abrova sends this user (confirm e-mail, password reset, magic link), like Firebase's
-     * `languageCode`: a BCP 47 tag such as `fa` or `en-US`. null = the project's template language (Console › Abrova
+     * `languageCode`: a BCP 47 tag such as `de` or `en-US`. null = the project's template language (Console › Abrova
      * Auth › Email templates). A language Abrova has no texts for also falls back to the template language.
      */
     var languageCode: String?

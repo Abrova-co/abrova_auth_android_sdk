@@ -42,8 +42,8 @@ fun interface AbrovaSignInListener {
  * and calls [onSignedIn] once a user is signed in. [AbrovaSignIn.show] opens it as a dialog.
  *
  * Built from Android framework views only. Colours come from your theme (`colorAccent`, `colorPrimary`,
- * `colorBackground`, `textColorPrimary`). Persian is laid out right to left; that needs `android:supportsRtl="true"`
- * in your manifest (the default for new projects).
+ * `colorBackground`, `textColorPrimary`). A right-to-left language is laid out right to left; that needs
+ * `android:supportsRtl="true"` in your manifest (the default for new projects).
  */
 @SuppressLint("ViewConstructor")
 class AbrovaSignInView @JvmOverloads constructor(

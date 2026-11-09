@@ -198,8 +198,17 @@ class SignInControllerTest {
         assertEquals("fa", auth.languageCode)
         assertEquals("fa", f.calls("/v1/password/sign-in").last().getHeader("x-abrova-locale"))
         assertEquals("ورود", AbrovaSignInStrings.of("fa-IR")["title"])
-        assertEquals("Sign in", AbrovaSignInStrings.of("de")["title"])
-        assertFalse(AbrovaSignInStrings.of(null).rtl)
+        assertTrue(AbrovaSignInStrings.of("FA_ir").rtl)
+    }
+
+    @Test
+    fun aLanguageTheScreenDoesNotHaveOrAnOddCodeShowsEnglish() {
+        for (code in listOf("de", "de-DE", null, "", "toString")) {
+            val s = AbrovaSignInStrings.of(code)
+            assertEquals("en", s.languageCode)
+            assertEquals("Sign in", s["title"])
+            assertFalse(s.rtl)
+        }
     }
 
     // ------------------------------------------------------------ 3. Sign-up
@@ -477,23 +486,23 @@ class SignInControllerTest {
     fun theEmailsFollowTheOpenScreenGivenBackOnCloseNeverTheAppsOwnChoice() = runBlocking {
         val f = fake("password")
         val auth = f.client()
-        val c = controller(auth, AbrovaSignInOptions(languageCode = "fa"))
+        val c = controller(auth, AbrovaSignInOptions(languageCode = "en"))
         c.load()
-        assertEquals("fa", auth.languageCode)
+        assertEquals("en", auth.languageCode)
         c.close()
         assertNull(auth.languageCode)
 
         auth.languageCode = "en-US"
-        val d = controller(auth, AbrovaSignInOptions(languageCode = "fa"))
+        val d = controller(auth, AbrovaSignInOptions(languageCode = "en"))
         d.load()
         assertEquals("the app's own choice is kept", "en-US", auth.languageCode)
         d.close()
         assertEquals("en-US", auth.languageCode)
 
         auth.languageCode = null
-        val e = controller(auth, language = "fa") // the app's language, no languageCode option
+        val e = controller(auth, language = "en") // the app's language, no languageCode option
         e.load()
-        assertEquals("fa", auth.languageCode)
+        assertEquals("en", auth.languageCode)
         auth.languageCode = "de" // the app changed it while the screen was open
         e.close()
         assertEquals("never undone over the app's change", "de", auth.languageCode)
@@ -503,25 +512,25 @@ class SignInControllerTest {
     fun twoOverlappingScreensKeepTheLanguageUntilTheLastCloses() = runBlocking {
         val f = fake("password")
         val auth = f.client()
-        val first = controller(auth, AbrovaSignInOptions(languageCode = "fa"))
+        val first = controller(auth, AbrovaSignInOptions(languageCode = "en"))
         first.load()
-        val second = controller(auth, AbrovaSignInOptions(languageCode = "fa")) // opens before the first closes
+        val second = controller(auth, AbrovaSignInOptions(languageCode = "en")) // opens before the first closes
         second.load()
         first.close()
-        assertEquals("fa", auth.languageCode)
+        assertEquals("en", auth.languageCode)
         first.close() // twice is harmless
-        assertEquals("fa", auth.languageCode)
+        assertEquals("en", auth.languageCode)
         second.close()
         assertNull(auth.languageCode)
 
         // Each client keeps its own count.
         val other = f.client()
-        val a = controller(auth, AbrovaSignInOptions(languageCode = "fa"))
+        val a = controller(auth, AbrovaSignInOptions(languageCode = "en"))
         val b = controller(other, AbrovaSignInOptions(languageCode = "en"))
         a.load()
         b.load()
         b.close()
-        assertEquals("fa", auth.languageCode)
+        assertEquals("en", auth.languageCode)
         assertNull(other.languageCode)
         a.close()
         assertNull(auth.languageCode)

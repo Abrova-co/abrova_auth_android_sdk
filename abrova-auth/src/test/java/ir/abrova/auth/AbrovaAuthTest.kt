@@ -391,12 +391,12 @@ class AbrovaAuthTest {
         handler = { _, _, _ -> MockResponse().setResponseCode(202) }
         make()
         auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
-        auth.languageCode = "fa"
+        auth.languageCode = "de"
         auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
         auth.languageCode = null
         auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
         val sent = calls("/v1/magic-link/send").map { it.getHeader("x-abrova-locale") }
-        assertEquals(listOf(null, "fa", null), sent)
+        assertEquals(listOf(null, "de", null), sent)
     }
 
     @Test
@@ -404,11 +404,11 @@ class AbrovaAuthTest {
         handler = { _, _, _ -> MockResponse().setResponseCode(202) }
         storage = MemorySessionStorage(null)
         auth = AbrovaAuth()
-        auth.languageCode = "fa-IR"
+        auth.languageCode = "de-AT"
         auth.configure("ab_live_test", server.url("/").toString(), OkHttpClient(), storage)
         auth.sendMagicLink("a@example.com", "https://app.example.com/magic")
-        assertEquals("fa-IR", calls("/v1/magic-link/send").single().getHeader("x-abrova-locale"))
-        for (bad in listOf("", "x", "fa\r\nX: y", "x".repeat(40), "12")) {
+        assertEquals("de-AT", calls("/v1/magic-link/send").single().getHeader("x-abrova-locale"))
+        for (bad in listOf("", "x", "de\r\nX: y", "x".repeat(40), "12")) {
             auth.languageCode = bad
             assertEquals(bad, null, auth.languageCode)
         }
@@ -418,10 +418,10 @@ class AbrovaAuthTest {
     fun useAppLanguageTakesTheDefaultLocale() {
         val before = java.util.Locale.getDefault()
         try {
-            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("fa-IR"))
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("de-AT"))
             make()
             auth.useAppLanguage()
-            assertEquals("fa-IR", auth.languageCode)
+            assertEquals("de-AT", auth.languageCode)
         } finally {
             java.util.Locale.setDefault(before)
         }

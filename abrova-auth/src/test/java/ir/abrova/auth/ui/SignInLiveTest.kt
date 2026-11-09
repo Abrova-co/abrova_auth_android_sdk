@@ -31,8 +31,15 @@ class SignInLiveTest {
         assumeTrue("set ABROVA_AUTH_LIVE_* to run", key.isNotEmpty() && base.isNotEmpty() && email.isNotEmpty())
         val auth = AbrovaAuth().apply { configure(key, base, OkHttpClient(), MemorySessionStorage()) }
         var result: AuthResult? = null
+        // The screens' language for the run, and the texts expected in it.
+        var screenLanguage = "en"
+        var expectedTitle = "Sign in to Tikashop"
+        var expectedWrong = "Wrong e-mail or password."
+        screenLanguage = "fa"
+        expectedTitle = "ورود به Tikashop"
+        expectedWrong = "ایمیل یا رمز اشتباه است."
 
-        suspend fun open(lang: String = "fa"): AbrovaSignInController {
+        suspend fun open(lang: String = screenLanguage): AbrovaSignInController {
             result = null
             val c = AbrovaSignInController(
                 auth,
@@ -48,8 +55,8 @@ class SignInLiveTest {
         var c = open()
         assertTrue(c.showPassword && c.showMagicLink && c.showGuest)
         assertFalse(c.showTelegram)
-        assertEquals("ورود به Tikashop", c.title)
-        assertEquals("fa", auth.languageCode)
+        assertEquals(expectedTitle, c.title)
+        assertEquals(screenLanguage, auth.languageCode)
 
         c.go(AbrovaSignInStep.SIGN_UP)
         c.email = email
@@ -66,7 +73,7 @@ class SignInLiveTest {
         c.password = "not-the-password-1"
         c.signIn()
         assertEquals("INVALID_CREDENTIALS", c.error)
-        assertEquals("ایمیل یا رمز اشتباه است.", c.errorText)
+        assertEquals(expectedWrong, c.errorText)
         assertNull(result)
         println("wrong password: ${c.errorText}")
         c.password = password

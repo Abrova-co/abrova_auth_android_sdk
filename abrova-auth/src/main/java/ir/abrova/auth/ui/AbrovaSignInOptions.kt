@@ -33,8 +33,9 @@ class AbrovaSignInOptions @JvmOverloads constructor(
     /** Shown above the title, for example your app icon. */
     val logo: Drawable? = null,
     /**
-     * `en` or `fa`. Null: the app's language, English when it is neither. The e-mails Abrova sends follow it too,
-     * unless you set `AbrovaAuth.languageCode` yourself.
+     * The screen's language, a code such as `en`. Null: the app's language, English when the screen doesn't have it.
+     * The e-mails Abrova sends follow it too, unless you set `AbrovaAuth.languageCode` yourself.
+     * Persian: `fa`, right to left.
      */
     val languageCode: String? = null,
     /**
