@@ -171,6 +171,7 @@ class AbrovaSignInView @JvmOverloads constructor(
     private fun buildHome() {
         header(c.title, back = null)
         errorBanner()
+        resendVerification()
         if (c.showPassword) {
             add(field(s["email"], "abrova-email", { c.email }, { c.email = it }, { c.emailError }, Kind.EMAIL))
             gap(12)
@@ -313,6 +314,28 @@ class AbrovaSignInView @JvmOverloads constructor(
             val t = c.errorText
             banner.text = t ?: ""
             banner.visibility = if (t == null) View.GONE else View.VISIBLE
+        }
+    }
+
+    /** "Send again" under the "confirm your e-mail" error, and the answer once a new link went out. */
+    private fun resendVerification() {
+        val button = outlinedButton(s["resend"], "abrova-resend-verification") { launch { resendVerification() } }
+        add(button, params().apply { bottomMargin = dp(12) })
+        val notice = TextView(context).apply {
+            tag = "abrova-resent"
+            setTextColor(palette.text)
+            background = rounded(palette.noticeBackground, 0, 8)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            textSize = 14f
+            textAlignment = View.TEXT_ALIGNMENT_VIEW_START
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        add(notice, params().apply { bottomMargin = dp(12) })
+        updaters += {
+            button.visibility = if (c.canResendVerification) View.VISIBLE else View.GONE
+            val to = c.resentTo
+            notice.text = to?.let { s["resent"].replace("{email}", BidiFormatter.getInstance(s.rtl).unicodeWrap(it, TextDirectionHeuristics.LTR)) } ?: ""
+            notice.visibility = if (to == null) View.GONE else View.VISIBLE
         }
     }
 
@@ -530,6 +553,8 @@ internal class Palette(
     val outline: Int,
     val error: Int,
     val errorBackground: Int,
+    /** Behind a "done" notice. */
+    val noticeBackground: Int,
     /** A dark background. */
     val dark: Boolean,
 ) {
@@ -554,6 +579,7 @@ internal class Palette(
                 outline = if (dark) 0x40FFFFFF else 0x33000000,
                 error = if (dark) 0xFFF2B8B5.toInt() else 0xFFB3261E.toInt(),
                 errorBackground = if (dark) 0x33F2B8B5 else 0x14B3261E,
+                noticeBackground = (accent and 0x00FFFFFF) or (if (dark) 0x33000000 else 0x1A000000),
                 dark = dark,
             )
         }

@@ -140,6 +140,46 @@ class SignInViewTest {
     }
 
     @Test
+    fun emailNotConfirmedShowsSendAgainWhichSendsANewLink() {
+        val f = fake("password")
+        f.answers["/v1/password/sign-in"] = { err("EMAIL_NOT_VERIFIED", 403) }
+        var fail = false
+        f.answers["/v1/email/resend-verification"] = { if (fail) err("INVALID_CREDENTIALS", 401) else json(JSONObject().put("ok", true), 202) }
+        val a = activity()
+        val view = AbrovaSignInView(a, f.client())
+        a.setContentView(view)
+        waitFor("the form") { view.find("abrova-email") != null }
+        assertEquals(View.GONE, view.find("abrova-resend-verification")!!.visibility)
+        view.edit("abrova-email").setText("ali@example.com")
+        view.edit("abrova-password").setText("a-good-password")
+        view.click("abrova-sign-in")
+        val again = view.find("abrova-resend-verification")!!
+        waitFor("Send again") { again.visibility == View.VISIBLE }
+        assertEquals("Send again", (again as TextView).text.toString())
+        assertTrue((view.find("abrova-sign-in-error") as TextView).text.contains("Confirm your e-mail"))
+
+        view.click("abrova-resend-verification")
+        val notice = view.find("abrova-resent") as TextView
+        waitFor("the new link") { notice.visibility == View.VISIBLE }
+        assertTrue(notice.text.toString().startsWith("We sent a new link to "))
+        assertTrue(notice.text.contains("ali@example.com"))
+        assertEquals(View.GONE, again.visibility)
+        val body = f.bodies("/v1/email/resend-verification").single()
+        assertEquals("ali@example.com", body.getString("email"))
+        assertEquals("a-good-password", body.getString("password"))
+
+        // An error shows in the error banner.
+        fail = true
+        view.click("abrova-sign-in")
+        waitFor("Send again") { again.visibility == View.VISIBLE }
+        assertEquals(View.GONE, notice.visibility)
+        view.click("abrova-resend-verification")
+        val banner = view.find("abrova-sign-in-error") as TextView
+        waitFor("the error") { banner.text.toString() == "Wrong e-mail or password." }
+        assertEquals(View.GONE, notice.visibility)
+    }
+
+    @Test
     fun forgotPasswordShowsCheckYourEmail() {
         val f = fake("password")
         f.answers["/v1/password/forgot"] = { okhttp3.mockwebserver.MockResponse().setResponseCode(202) }

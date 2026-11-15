@@ -56,6 +56,17 @@ class AbrovaSignInController(
     /** The message for [error], in the screen's language. */
     val errorText: String? get() = error?.let { strings.error(it) }
 
+    /** The e-mail a new confirmation link was just sent to ("Send again"), or null. */
+    var resentTo: String? = null
+        private set
+
+    /**
+     * Signing in failed because the e-mail is not confirmed yet: the screen offers "Send again"
+     * ([resendVerification]) with the e-mail and password typed.
+     */
+    val canResendVerification: Boolean
+        get() = step == AbrovaSignInStep.HOME && error == AbrovaAuthErrorCode.EMAIL_NOT_VERIFIED
+
     var sent: AbrovaSentKind? = null
         private set
 
@@ -117,6 +128,7 @@ class AbrovaSignInController(
     /** Opens [step], clearing the last error. */
     fun go(step: AbrovaSignInStep) {
         error = null
+        resentTo = null
         emailError = null
         passwordError = null
         if (step == AbrovaSignInStep.TELEGRAM_PHONE) {
@@ -139,7 +151,8 @@ class AbrovaSignInController(
             val r = auth.signUp(
                 email.trim(),
                 password,
-                redirectUrl = options.verifyRedirectUrl ?: "${auth.baseUrl}/pages/verify",
+                redirectUrl = verifyRedirectUrl(),
+                continueUrl = options.continueUrl,
             )
             if (r.signedIn) return@act done(AuthResult(r.userId, null))
             password = ""
@@ -158,9 +171,23 @@ class AbrovaSignInController(
         if (!checkEmail()) return
         act {
             // No URL of the app's own: the server uses Abrova's reset page.
-            auth.sendPasswordReset(email.trim(), options.resetRedirectUrl)
+            auth.sendPasswordReset(email.trim(), options.resetRedirectUrl, options.continueUrl)
             sent = AbrovaSentKind.RESET
             set(step = AbrovaSignInStep.SENT)
+        }
+    }
+
+    /**
+     * "Send again" after signing in failed with [AbrovaAuthErrorCode.EMAIL_NOT_VERIFIED]: sends a new confirmation
+     * link, proving the account with the e-mail and password typed. Does not sign in.
+     */
+    suspend fun resendVerification() {
+        if (!canResendVerification) return
+        if (!checkEmail(needPassword = true)) return
+        val to = email.trim()
+        act {
+            auth.resendVerification(to, password, redirectUrl = verifyRedirectUrl(), continueUrl = options.continueUrl)
+            resentTo = to
         }
     }
 
@@ -264,6 +291,9 @@ class AbrovaSignInController(
         }
     }
 
+    /** The app's confirm page, else Abrova's own. */
+    private fun verifyRedirectUrl() = options.verifyRedirectUrl ?: "${auth.baseUrl}/pages/verify"
+
     private fun cleanPhone() = phone.replace(Regex("[\\s\\-()]"), "")
 
     private fun checkEmail(needPassword: Boolean = false): Boolean {
@@ -290,6 +320,7 @@ class AbrovaSignInController(
     private suspend fun act(action: suspend () -> Unit) {
         if (busy) return
         error = null
+        resentTo = null
         set(busy = true)
         try {
             action()

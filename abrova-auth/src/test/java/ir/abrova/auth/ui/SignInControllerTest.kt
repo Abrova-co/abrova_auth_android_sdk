@@ -296,6 +296,87 @@ class SignInControllerTest {
         assertEquals("https://app.example.com/reset", f.bodies("/v1/password/forgot").last().getString("redirectUrl"))
     }
 
+    // ------------------------------------------------------------ Confirm e-mail again
+
+    @Test
+    fun emailNotConfirmedOffersSendAgainWithTheTypedEmailAndPassword() = runBlocking {
+        val f = fake("password")
+        f.answers["/v1/password/sign-in"] = { err("EMAIL_NOT_VERIFIED", 403) }
+        f.answers["/v1/email/resend-verification"] = { json(JSONObject().put("ok", true), 202) }
+        val auth = f.client()
+        val c = controller(auth, AbrovaSignInOptions(continueUrl = "myapp://home"))
+        c.load()
+        assertFalse(c.canResendVerification)
+        c.email = " ali@example.com "
+        c.password = "a-good-password"
+        c.signIn()
+        assertEquals("EMAIL_NOT_VERIFIED", c.error)
+        assertEquals("Confirm your e-mail first. Check your inbox.", c.errorText)
+        assertTrue(c.canResendVerification)
+
+        c.resendVerification()
+        val body = f.bodies("/v1/email/resend-verification").single()
+        assertEquals("ali@example.com", body.getString("email"))
+        assertEquals("a-good-password", body.getString("password"))
+        assertEquals("${auth.baseUrl}/pages/verify", body.getString("redirectUrl"))
+        assertEquals("myapp://home", body.getString("continueUrl"))
+        assertNull(c.error)
+        assertEquals("ali@example.com", c.resentTo)
+        assertFalse(c.canResendVerification)
+        assertFalse(c.busy)
+        assertNull("not signed in", auth.currentUserId)
+        assertTrue(results.isEmpty())
+        assertEquals(AbrovaSignInStep.HOME, c.step)
+
+        c.go(AbrovaSignInStep.FORGOT)
+        assertNull("the notice goes with the screen", c.resentTo)
+    }
+
+    @Test
+    fun sendAgainErrorsShowLikeOtherErrors() = runBlocking {
+        val f = fake("password")
+        f.answers["/v1/password/sign-in"] = { err("EMAIL_NOT_VERIFIED", 403) }
+        f.answers["/v1/email/resend-verification"] = { err("RATE_LIMITED", 429) }
+        val c = controller(f.client(), AbrovaSignInOptions(languageCode = "fa"))
+        c.load()
+        c.email = "ali@example.com"
+        c.password = "a-good-password"
+        c.signIn()
+        c.resendVerification()
+        assertEquals("RATE_LIMITED", c.error)
+        assertEquals(c.strings.error("RATE_LIMITED"), c.errorText)
+        assertNull(c.resentTo)
+        assertEquals("ارسال دوباره", c.strings["resend"])
+        assertEquals("لینک تازه به {email} فرستاده شد.", c.strings["resent"])
+
+        // Only after "confirm your e-mail": otherwise nothing is sent.
+        c.resendVerification()
+        assertEquals(1, f.bodies("/v1/email/resend-verification").size)
+    }
+
+    @Test
+    fun continueUrlGoesWithSignUpAndForgotPassword() = runBlocking {
+        val f = fake("password")
+        f.answers["/v1/password/sign-up"] = { json(JSONObject().put("userId", "u9").put("verificationSent", true).put("session", JSONObject.NULL)) }
+        f.answers["/v1/password/forgot"] = { MockResponse().setResponseCode(202) }
+        val c = controller(f.client(), AbrovaSignInOptions(continueUrl = "myapp://home"))
+        c.load()
+        c.go(AbrovaSignInStep.SIGN_UP)
+        c.email = "new@example.com"
+        c.password = "a-good-password"
+        c.signUp()
+        assertEquals("myapp://home", f.bodies("/v1/password/sign-up").single().getString("continueUrl"))
+        c.go(AbrovaSignInStep.FORGOT)
+        c.sendReset()
+        assertEquals("myapp://home", f.bodies("/v1/password/forgot").single().getString("continueUrl"))
+
+        val bare = controller(f.client())
+        bare.load()
+        bare.email = "new@example.com"
+        bare.sendReset()
+        assertFalse(f.bodies("/v1/password/forgot").last().has("continueUrl"))
+    }
+
     // ------------------------------------------------------------ Magic link
 
     @Test

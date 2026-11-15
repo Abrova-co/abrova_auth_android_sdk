@@ -231,11 +231,20 @@ class AbrovaAuth internal constructor() {
 
     /**
      * Creates an account. When the project requires a verified e-mail the user is
-     * not signed in until they follow the link ([SignUpResult.signedIn] is false).
+     * not signed in until they follow the link ([SignUpResult.signedIn] is false), and the
+     * confirmation e-mail is always sent (to Abrova's own confirm page when there is no [redirectUrl]).
+     *
+     * @param redirectUrl Your own confirm page (one of the project's link addresses). Null: Abrova's own page.
+     * @param continueUrl Where the "Continue" button of Abrova's confirm page takes the user afterwards, like
+     *   Firebase's continue URL. Must be one of the project's link addresses. Not used with your own [redirectUrl].
      */
     @JvmOverloads
-    suspend fun signUp(email: String, password: String, redirectUrl: String? = null): SignUpResult {
-        val json = client().send("POST", "v1/password/sign-up", mapOf("email" to email, "password" to password, "redirectUrl" to redirectUrl))
+    suspend fun signUp(email: String, password: String, redirectUrl: String? = null, continueUrl: String? = null): SignUpResult {
+        val json = client().send(
+            "POST",
+            "v1/password/sign-up",
+            mapOf("email" to email, "password" to password, "redirectUrl" to redirectUrl, "continueUrl" to continueUrl),
+        )
             ?: throw HttpClient.invalidResponse(null)
         val session = json.optJSONObject("session")?.let { HttpClient.parseSession(it) }
         if (session != null) start(session)
@@ -258,10 +267,12 @@ class AbrovaAuth internal constructor() {
      *
      * @param redirectUrl Your own reset page (one of the project's allowed redirect URLs). Null: Abrova's own reset
      *   page.
+     * @param continueUrl Where the "Continue" button of Abrova's reset page takes the user after saving the new
+     *   password. Must be one of the project's link addresses. Not used with your own [redirectUrl].
      */
     @JvmOverloads
-    suspend fun sendPasswordReset(email: String, redirectUrl: String? = null) {
-        client().send("POST", "v1/password/forgot", mapOf("email" to email, "redirectUrl" to redirectUrl))
+    suspend fun sendPasswordReset(email: String, redirectUrl: String? = null, continueUrl: String? = null) {
+        client().send("POST", "v1/password/forgot", mapOf("email" to email, "redirectUrl" to redirectUrl, "continueUrl" to continueUrl))
     }
 
     /** Sets a new password with the token from the reset link. Every session of the user ends. */
@@ -274,9 +285,37 @@ class AbrovaAuth internal constructor() {
         client().send("POST", "v1/email/verify", mapOf("token" to token))
     }
 
-    /** Sends the signed-in user a new verification link. */
-    suspend fun sendEmailVerification(redirectUrl: String) {
-        authorized { http, token -> http.send("POST", "v1/email/send-verification", mapOf("redirectUrl" to redirectUrl), token) }
+    /**
+     * Sends the signed-in user a new verification link.
+     *
+     * @param redirectUrl Your own confirm page (one of the project's link addresses). Null: Abrova's own page.
+     * @param continueUrl Where the "Continue" button of Abrova's confirm page takes the user afterwards. Must be one
+     *   of the project's link addresses. Not used with your own [redirectUrl].
+     */
+    @JvmOverloads
+    suspend fun sendEmailVerification(redirectUrl: String? = null, continueUrl: String? = null) {
+        authorized { http, token ->
+            http.send("POST", "v1/email/send-verification", mapOf("redirectUrl" to redirectUrl, "continueUrl" to continueUrl), token)
+        }
+    }
+
+    /**
+     * Sends the confirmation e-mail again to someone who cannot sign in yet because the project requires a verified
+     * e-mail ([signIn] failed with [AbrovaAuthErrorCode.EMAIL_NOT_VERIFIED]). The e-mail and password prove the
+     * account: a wrong pair fails like signing in ([AbrovaAuthErrorCode.INVALID_CREDENTIALS]). Nothing is sent to an
+     * account that is already confirmed. Does not sign in and does not change who is signed in.
+     *
+     * @param redirectUrl Your own confirm page (one of the project's link addresses). Null: Abrova's own page.
+     * @param continueUrl Where the "Continue" button of Abrova's confirm page takes the user afterwards. Must be one
+     *   of the project's link addresses. Not used with your own [redirectUrl].
+     */
+    @JvmOverloads
+    suspend fun resendVerification(email: String, password: String, redirectUrl: String? = null, continueUrl: String? = null) {
+        client().send(
+            "POST",
+            "v1/email/resend-verification",
+            mapOf("email" to email, "password" to password, "redirectUrl" to redirectUrl, "continueUrl" to continueUrl),
+        )
     }
 
     // ---------------------------------------------------------------- Magic link

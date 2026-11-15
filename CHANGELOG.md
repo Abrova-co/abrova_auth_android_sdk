@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.0
+
+- `resendVerification(email, password, redirectUrl, continueUrl)`: sends the confirmation e-mail again to someone who
+  cannot sign in yet because your project requires a confirmed e-mail (`signIn` failed with `EMAIL_NOT_VERIFIED`).
+  The e-mail and password prove the account; a wrong pair fails like signing in (`INVALID_CREDENTIALS`). It does not
+  sign in, and nothing is sent to an account that is already confirmed.
+- `continueUrl` on `signUp`, `sendEmailVerification`, `sendPasswordReset` and `resendVerification`, like Firebase's
+  continue URL: after confirming the e-mail or saving the new password on Abrova's page, a "Continue" button takes
+  the user there (for example a link that opens your app). It must be one of your project's link addresses (Console ›
+  Abrova Auth › Settings). Sent only when you pass it.
+- `sendEmailVerification`: `redirectUrl` is optional; without it the link opens Abrova's own confirm page.
+- When your project requires a confirmed e-mail, `signUp` now always sends the confirmation e-mail (to Abrova's own
+  page when there is no `redirectUrl`), so `verificationSent` is true.
+- Link addresses may be `http://localhost:<port>` or `http://127.0.0.1:<port>` while you develop.
+- Sign-in screen: when signing in answers "confirm your e-mail first", a "Send again" button sends a new confirmation
+  link to the e-mail typed ("We sent a new link to ..."), in English and Persian. New option `continueUrl`, passed to
+  create account, forgot password and Send again.
+
 ## 0.4.0
 
 - Ready-made sign-in screens, like FirebaseUI: `AbrovaSignIn.show(activity) { result -> ... }` or, in a coroutine,

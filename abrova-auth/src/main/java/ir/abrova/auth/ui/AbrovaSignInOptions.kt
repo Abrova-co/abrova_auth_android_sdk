@@ -58,6 +58,12 @@ class AbrovaSignInOptions @JvmOverloads constructor(
     val resetRedirectUrl: String? = null,
     /** Opens the Telegram bot link. Without it the screen shows the link for the user to copy. */
     val openUrl: AbrovaOpenUrl? = null,
+    /**
+     * Where the "Continue" button of Abrova's confirm and reset pages takes the user afterwards, for example a link
+     * that opens your app. Must be one of the project's link addresses (Console › Abrova Auth › Settings). Null: no
+     * Continue button. Not used with your own [verifyRedirectUrl] or [resetRedirectUrl].
+     */
+    val continueUrl: String? = null,
 ) {
     /** Builds the options from Java (Kotlin can use named arguments). Google and Apple take Kotlin suspend functions. */
     class Builder {
@@ -69,6 +75,7 @@ class AbrovaSignInOptions @JvmOverloads constructor(
         private var verifyRedirectUrl: String? = null
         private var resetRedirectUrl: String? = null
         private var openUrl: AbrovaOpenUrl? = null
+        private var continueUrl: String? = null
 
         fun appName(value: String?) = apply { appName = value }
         fun logo(value: Drawable?) = apply { logo = value }
@@ -78,6 +85,7 @@ class AbrovaSignInOptions @JvmOverloads constructor(
         fun verifyRedirectUrl(value: String?) = apply { verifyRedirectUrl = value }
         fun resetRedirectUrl(value: String?) = apply { resetRedirectUrl = value }
         fun openUrl(value: AbrovaOpenUrl?) = apply { openUrl = value }
+        fun continueUrl(value: String?) = apply { continueUrl = value }
 
         fun build() = AbrovaSignInOptions(
             appName = appName,
@@ -88,6 +96,7 @@ class AbrovaSignInOptions @JvmOverloads constructor(
             verifyRedirectUrl = verifyRedirectUrl,
             resetRedirectUrl = resetRedirectUrl,
             openUrl = openUrl,
+            continueUrl = continueUrl,
         )
     }
 }

@@ -37,7 +37,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("ir.abrova:abrova-auth:0.4.0")
+    implementation("ir.abrova:abrova-auth:0.5.0")
 }
 ```
 
@@ -45,7 +45,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'ir.abrova:abrova-auth:0.4.0'
+    implementation 'ir.abrova:abrova-auth:0.5.0'
 }
 ```
 
@@ -100,6 +100,7 @@ It opens as a dialog on wide screens and full screen on phones. To put the form 
 | `magicLinkRedirectUrl` | A link that opens your app; shows the magic link button. Finish it with `signInWithMagicLink(token)` |
 | `verifyRedirectUrl`, `resetRedirectUrl` | Your own pages for the confirm and reset links. Default: Abrova's pages |
 | `openUrl` | Opens the Telegram bot link (for example with `Intent.ACTION_VIEW`); without it the link is shown to copy |
+| `continueUrl` | Where the "Continue" button of Abrova's confirm and reset pages takes the user afterwards (one of the project's link addresses). Used for create account, forgot password and "Send again" |
 
 ```kotlin
 AbrovaSignInOptions(
@@ -133,6 +134,33 @@ val code = auth.requestTelegramCode("+37491234567")
 if (!code.sent) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(code.botUrl)))
 auth.verifyTelegramCode("+37491234567", "123456")
 ```
+
+### Confirm e-mail and reset password
+
+```kotlin
+// Your own pages, or leave redirectUrl out for Abrova's pages.
+auth.sendPasswordReset("ana@example.com")
+auth.sendEmailVerification() // the signed-in user
+
+// continueUrl: after confirming or saving the new password on Abrova's page, a "Continue" button goes here
+// (one of the project's link addresses, Console › Abrova Auth › Settings).
+auth.signUp("ana@example.com", "a-long-password", continueUrl = "https://example.com/welcome")
+auth.sendPasswordReset("ana@example.com", continueUrl = "https://example.com/signed-out")
+
+// The project requires a confirmed e-mail and the user lost the first link:
+try {
+    auth.signIn("ana@example.com", "a-long-password")
+} catch (e: AbrovaAuthException) {
+    if (e.code == AbrovaAuthErrorCode.EMAIL_NOT_VERIFIED) {
+        // Sends the confirmation link again. Does not sign in.
+        auth.resendVerification("ana@example.com", "a-long-password", continueUrl = "https://example.com/welcome")
+    }
+}
+```
+
+`resendVerification` checks the e-mail and password like signing in (`INVALID_CREDENTIALS` when wrong,
+`RATE_LIMITED` when tried too often) and sends nothing to an account that is already confirmed. The ready-made sign-in
+screen shows a "Send again" button for this.
 
 Show only the methods the project offers:
 

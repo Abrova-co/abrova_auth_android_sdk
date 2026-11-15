@@ -340,6 +340,84 @@ class AbrovaAuthTest {
         assertNull(auth.currentUserId)
     }
 
+    // ------------------------------------------------------------ Confirm e-mail again, continueUrl
+
+    @Test
+    fun resendVerificationSendsEmailPasswordAndLinksWithoutSigningIn() = runBlocking {
+        handler = { _, _, _ -> json(202, """{"ok":true}""") }
+        make()
+        auth.resendVerification("a@b.co", "long-password-1")
+        auth.resendVerification("a@b.co", "long-password-1", redirectUrl = "https://app.example.com/verify", continueUrl = "myapp://home")
+
+        val (bare, full) = calls("/v1/email/resend-verification")
+        assertEquals("POST", bare.method)
+        assertEquals("ab_live_test", bare.getHeader("x-api-key"))
+        assertNull("no Bearer", bare.getHeader("Authorization"))
+        val b = bodyOf(bare)
+        assertEquals("a@b.co", b.getString("email"))
+        assertEquals("long-password-1", b.getString("password"))
+        assertFalse("redirectUrl only when given", b.has("redirectUrl"))
+        assertFalse("continueUrl only when given", b.has("continueUrl"))
+        val f = bodyOf(full)
+        assertEquals("https://app.example.com/verify", f.getString("redirectUrl"))
+        assertEquals("myapp://home", f.getString("continueUrl"))
+        assertNull(auth.currentUserId)
+        assertNull(storage.load())
+    }
+
+    @Test
+    fun resendVerificationKeepsTheSignedInUserAndThrowsTheServerCode() = runBlocking {
+        var answer = json(401, """{"code":"INVALID_CREDENTIALS","message":"Wrong e-mail or password"}""")
+        handler = { path, _, _ -> if (path == "/v1/email/resend-verification") answer else MockResponse().setResponseCode(500) }
+        make(StoredSession("ref-0", "u-1"))
+        try {
+            auth.resendVerification("a@b.co", "wrong")
+            fail("expected INVALID_CREDENTIALS")
+        } catch (e: AbrovaAuthException) {
+            assertEquals(AbrovaAuthErrorCode.INVALID_CREDENTIALS, e.code)
+            assertEquals(401, e.httpStatus)
+        }
+        answer = json(429, """{"code":"RATE_LIMITED","message":"slow down","retryAfterSec":30}""")
+        try {
+            auth.resendVerification("a@b.co", "long-password-1")
+            fail("expected RATE_LIMITED")
+        } catch (e: AbrovaAuthException) {
+            assertEquals(AbrovaAuthErrorCode.RATE_LIMITED, e.code)
+            assertEquals(30, e.retryAfterSec)
+        }
+        assertEquals("u-1", auth.currentUserId)
+        assertEquals(StoredSession("ref-0", "u-1"), storage.load())
+    }
+
+    @Test
+    fun continueUrlIsSentOnlyWhenGiven() = runBlocking {
+        handler = { path, _, _ ->
+            when (path) {
+                "/v1/password/sign-up" -> json(200, """{"userId":"u-9","verificationSent":true,"session":null}""")
+                "/v1/anonymous" -> session("acc-1", "ref-1", "u-anon")
+                else -> json(202, """{"ok":true}""")
+            }
+        }
+        make()
+        auth.signUp("a@b.co", "long-password-1")
+        auth.signUp("a@b.co", "long-password-1", continueUrl = "myapp://home")
+        auth.sendPasswordReset("a@b.co")
+        auth.sendPasswordReset("a@b.co", continueUrl = "myapp://home")
+        auth.signInAnonymously()
+        auth.sendEmailVerification()
+        auth.sendEmailVerification("https://app.example.com/verify", "myapp://home")
+
+        for (path in listOf("/v1/password/sign-up", "/v1/password/forgot", "/v1/email/send-verification")) {
+            val (without, with) = calls(path).map { bodyOf(it) }
+            assertFalse(path, without.has("continueUrl"))
+            assertFalse(path, without.has("redirectUrl"))
+            assertEquals(path, "myapp://home", with.getString("continueUrl"))
+        }
+        val verify = calls("/v1/email/send-verification")
+        assertEquals("Bearer acc-1", verify[0].getHeader("Authorization"))
+        assertEquals("https://app.example.com/verify", bodyOf(verify[1]).getString("redirectUrl"))
+    }
+
     @Test
     fun methodsAndTelegram() = runBlocking {
         handler = { path, _, _ ->
@@ -437,7 +515,7 @@ class AbrovaAuthTest {
         auth.signOut()
 
         assertTrue(requests.size >= 2)
-        requests.forEach { (path, req) -> assertEquals(path, "auth-android/0.4.0", req.getHeader("X-Abrova-SDK")) }
+        requests.forEach { (path, req) -> assertEquals(path, "auth-android/0.5.0", req.getHeader("X-Abrova-SDK")) }
     }
 
     @Test
