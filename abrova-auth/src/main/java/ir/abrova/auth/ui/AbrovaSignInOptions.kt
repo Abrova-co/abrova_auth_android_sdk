@@ -64,6 +64,12 @@ class AbrovaSignInOptions @JvmOverloads constructor(
      * Continue button. Not used with your own [verifyRedirectUrl] or [resetRedirectUrl].
      */
     val continueUrl: String? = null,
+    /**
+     * Sends the confirm e-mail when someone creates an account. Set it to false when your project doesn't require a
+     * confirmed e-mail and you don't want people to get that e-mail. A project that requires a confirmed e-mail still
+     * sends it, else the account could never sign in.
+     */
+    val sendVerificationEmail: Boolean = true,
 ) {
     /** Builds the options from Java (Kotlin can use named arguments). Google and Apple take Kotlin suspend functions. */
     class Builder {
@@ -76,6 +82,7 @@ class AbrovaSignInOptions @JvmOverloads constructor(
         private var resetRedirectUrl: String? = null
         private var openUrl: AbrovaOpenUrl? = null
         private var continueUrl: String? = null
+        private var sendVerificationEmail = true
 
         fun appName(value: String?) = apply { appName = value }
         fun logo(value: Drawable?) = apply { logo = value }
@@ -86,6 +93,7 @@ class AbrovaSignInOptions @JvmOverloads constructor(
         fun resetRedirectUrl(value: String?) = apply { resetRedirectUrl = value }
         fun openUrl(value: AbrovaOpenUrl?) = apply { openUrl = value }
         fun continueUrl(value: String?) = apply { continueUrl = value }
+        fun sendVerificationEmail(value: Boolean) = apply { sendVerificationEmail = value }
 
         fun build() = AbrovaSignInOptions(
             appName = appName,
@@ -97,6 +105,7 @@ class AbrovaSignInOptions @JvmOverloads constructor(
             resetRedirectUrl = resetRedirectUrl,
             openUrl = openUrl,
             continueUrl = continueUrl,
+            sendVerificationEmail = sendVerificationEmail,
         )
     }
 }

@@ -230,6 +230,22 @@ class SignInControllerTest {
     }
 
     @Test
+    fun sendVerificationEmailFalseAsksForNoConfirmEmailAndSignsInAtOnce() = runBlocking {
+        val f = fake("password")
+        f.answers["/v1/password/sign-up"] = {
+            json(JSONObject().put("userId", "u1").put("verificationSent", false).put("session", JSONObject(f.session("u1").getBody()!!.readUtf8())))
+        }
+        val c = controller(f.client(), AbrovaSignInOptions(sendVerificationEmail = false))
+        c.load()
+        c.go(AbrovaSignInStep.SIGN_UP)
+        c.email = "new@example.com"
+        c.password = "a-good-password"
+        c.signUp()
+        assertFalse(f.bodies("/v1/password/sign-up").single().has("redirectUrl"))
+        assertEquals(listOf("u1"), results.map { it.userId })
+    }
+
+    @Test
     fun signUpThatNeedsAConfirmedEmailLinksToTheHostedConfirmPage() = runBlocking {
         val f = fake("password")
         f.answers["/v1/password/sign-up"] = { json(JSONObject().put("userId", "u9").put("verificationSent", true).put("session", JSONObject.NULL)) }

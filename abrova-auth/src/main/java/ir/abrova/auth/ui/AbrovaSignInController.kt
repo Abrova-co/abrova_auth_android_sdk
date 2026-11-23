@@ -85,6 +85,15 @@ class AbrovaSignInController(
     var passwordError: String? = null
         private set
 
+    /** The password is shown as typed (the eye button); hidden again on every new screen. */
+    var passwordVisible: Boolean = false
+        private set
+
+    fun togglePasswordVisible() {
+        passwordVisible = !passwordVisible
+        set()
+    }
+
     private var closed = false
 
     /** This screen set [AbrovaAuth.languageCode] (it was unset) and gives it back. */
@@ -128,6 +137,7 @@ class AbrovaSignInController(
     /** Opens [step], clearing the last error. */
     fun go(step: AbrovaSignInStep) {
         error = null
+        passwordVisible = false
         resentTo = null
         emailError = null
         passwordError = null
@@ -151,7 +161,8 @@ class AbrovaSignInController(
             val r = auth.signUp(
                 email.trim(),
                 password,
-                redirectUrl = verifyRedirectUrl(),
+                // Without a link the server only sends one when the project requires a confirmed e-mail.
+                redirectUrl = if (options.sendVerificationEmail) verifyRedirectUrl() else null,
                 continueUrl = options.continueUrl,
             )
             if (r.signedIn) return@act done(AuthResult(r.userId, null))

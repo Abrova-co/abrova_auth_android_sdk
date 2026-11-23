@@ -404,7 +404,24 @@ class AbrovaSignInView @JvmOverloads constructor(
                 override fun afterTextChanged(s: Editable?) = onChanged(s?.toString().orEmpty())
             })
         }
-        box.addView(edit, params())
+        val secret = kind == Kind.PASSWORD || kind == Kind.NEW_PASSWORD
+        val eye = if (!secret) null else ImageView(context).apply {
+            this.tag = "$tag-eye"
+            scaleType = ImageView.ScaleType.CENTER
+            isFocusable = true
+            background = null
+            setOnClickListener { if (!c.busy) c.togglePasswordVisible() }
+        }
+        if (eye == null) {
+            box.addView(edit, params())
+        } else {
+            // The eye sits inside the field, on the end side; the text stops before it.
+            edit.setPaddingRelative(dp(12), dp(12), dp(48), dp(12))
+            val frame = FrameLayout(context)
+            frame.addView(edit, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
+            frame.addView(eye, FrameLayout.LayoutParams(dp(48), FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END or Gravity.CENTER_VERTICAL))
+            box.addView(frame, params())
+        }
         val errorView = TextView(context).apply {
             textSize = 12f
             setTextColor(palette.error)
@@ -418,6 +435,19 @@ class AbrovaSignInView @JvmOverloads constructor(
             errorView.text = e ?: ""
             errorView.visibility = if (e == null) View.GONE else View.VISIBLE
             edit.isEnabled = !c.busy
+            if (eye != null) {
+                val shown = c.passwordVisible
+                val variation = if (shown) InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD else InputType.TYPE_TEXT_VARIATION_PASSWORD
+                val type = InputType.TYPE_CLASS_TEXT or variation
+                if (edit.inputType != type) {
+                    val at = edit.selectionEnd
+                    edit.inputType = type
+                    edit.setSelection(at.coerceIn(0, edit.text.length))
+                }
+                eye.setImageDrawable(EyeDrawable(palette.muted, crossed = shown, size = dp(22)))
+                eye.contentDescription = s[if (shown) "hidePassword" else "showPassword"]
+                eye.isEnabled = !c.busy
+            }
         }
         return box
     }
@@ -606,4 +636,38 @@ internal class Palette(
             return if (la > lb) la / lb else lb / la
         }
     }
+}
+
+/** An eye drawn in code (the SDK ships no image files); crossed out while the password is shown. */
+internal class EyeDrawable(color: Int, private val crossed: Boolean, private val size: Int) : android.graphics.drawable.Drawable() {
+    private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = size / 13f
+        strokeCap = android.graphics.Paint.Cap.ROUND
+    }
+
+    override fun getIntrinsicWidth() = size
+    override fun getIntrinsicHeight() = size
+
+    override fun draw(canvas: android.graphics.Canvas) {
+        val b = bounds
+        val u = b.width() / 24f
+        val x = b.left.toFloat()
+        val y = b.top.toFloat()
+        val eye = android.graphics.Path().apply {
+            moveTo(x + 2 * u, y + 12 * u)
+            quadTo(x + 12 * u, y - 1 * u, x + 22 * u, y + 12 * u)
+            quadTo(x + 12 * u, y + 25 * u, x + 2 * u, y + 12 * u)
+            close()
+        }
+        canvas.drawPath(eye, paint)
+        canvas.drawCircle(x + 12 * u, y + 12 * u, 3 * u, paint)
+        if (crossed) canvas.drawLine(x + 3 * u, y + 3 * u, x + 21 * u, y + 21 * u, paint)
+    }
+
+    override fun setAlpha(alpha: Int) { paint.alpha = alpha }
+    override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) { paint.colorFilter = colorFilter }
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = android.graphics.PixelFormat.TRANSLUCENT
 }

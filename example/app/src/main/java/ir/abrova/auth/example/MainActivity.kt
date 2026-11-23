@@ -17,7 +17,7 @@ import ir.abrova.auth.ui.AbrovaSignIn
 import ir.abrova.auth.ui.AbrovaSignInOptions
 import kotlinx.coroutines.launch
 
-// Abrova Auth — Android example (SDK 0.5.0)
+// Abrova Auth — Android example (SDK 0.5.1)
 //
 // Paste your public project key (Abrova Console → your project → API keys) into the field below,
 // or replace the placeholder. Never put a server secret in an app.

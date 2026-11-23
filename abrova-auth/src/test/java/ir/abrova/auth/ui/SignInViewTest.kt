@@ -90,6 +90,27 @@ class SignInViewTest {
     }
 
     @Test
+    fun theEyeShowsAndHidesThePasswordAndANewScreenHidesItAgain() {
+        val f = fake("password")
+        val a = activity()
+        val view = AbrovaSignInView(a, f.client())
+        a.setContentView(view)
+        waitFor("the form") { view.find("abrova-password") != null }
+        val variation = { tag: String -> view.edit(tag).inputType and android.text.InputType.TYPE_MASK_VARIATION }
+        assertEquals(android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, variation("abrova-password"))
+        assertEquals("Show password", view.find("abrova-password-eye")!!.contentDescription)
+        view.edit("abrova-password").setText("a-good-password")
+        view.click("abrova-password-eye")
+        assertEquals(android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, variation("abrova-password"))
+        assertEquals("a-good-password", view.edit("abrova-password").text.toString())
+        assertEquals("Hide password", view.find("abrova-password-eye")!!.contentDescription)
+        view.click("abrova-to-sign-up")
+        assertEquals(android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, variation("abrova-sign-up-password"))
+        view.click("abrova-sign-up-password-eye")
+        assertEquals(android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, variation("abrova-sign-up-password"))
+    }
+
+    @Test
     fun persianRightToLeftWithLeftToRightInputsAndErrorsFromTheCode() {
         val f = fake("password", "telegram")
         f.answers["/v1/password/sign-in"] = { err("INVALID_CREDENTIALS", 401) }

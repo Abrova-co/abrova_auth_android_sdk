@@ -37,7 +37,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("ir.abrova:abrova-auth:0.5.0")
+    implementation("ir.abrova:abrova-auth:0.5.1")
 }
 ```
 
@@ -45,7 +45,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'ir.abrova:abrova-auth:0.5.0'
+    implementation 'ir.abrova:abrova-auth:0.5.1'
 }
 ```
 
@@ -99,6 +99,7 @@ It opens as a dialog on wide screens and full screen on phones. To put the form 
 | `google`, `apple` | A `suspend` function that gets an ID token for the hashed nonce it is given (for example with Credential Manager or Sign in with Apple). The button shows only when you pass it |
 | `magicLinkRedirectUrl` | A link that opens your app; shows the magic link button. Finish it with `signInWithMagicLink(token)` |
 | `verifyRedirectUrl`, `resetRedirectUrl` | Your own pages for the confirm and reset links. Default: Abrova's pages |
+| `sendVerificationEmail` | `false`: no confirm e-mail when someone creates an account, for a project that doesn't require a confirmed e-mail. Default: `true` |
 | `openUrl` | Opens the Telegram bot link (for example with `Intent.ACTION_VIEW`); without it the link is shown to copy |
 | `continueUrl` | Where the "Continue" button of Abrova's confirm and reset pages takes the user afterwards (one of the project's link addresses). Used for create account, forgot password and "Send again" |
 
